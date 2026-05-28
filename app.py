@@ -66,45 +66,7 @@ def main(page: ft.Page):
     visualizer = GraphVisualizer(width=720, height=540)
     result_container = ft.Column()
 
-    genre = ft.Dropdown(
-        label="Género",
-        width=180,
-        value="pop",
-        options=[
-            ft.dropdown.Option("pop"),
-            ft.dropdown.Option("rock"),
-            ft.dropdown.Option("jazz"),
-        ],
-    )
-
-    key = ft.Dropdown(
-        label="Tonalidad",
-        width=130,
-        value="C",
-        options=[ft.dropdown.Option(k) for k in KEYS],
-    )
-
-    length_slider = ft.Slider(
-        min=4,
-        max=16,
-        divisions=12,
-        value=4,
-    )
-
-    edit_field = ft.TextField(
-        label="Editar progresión",
-        expand=True,
-    )
-
-    add_chord_dropdown = ft.Dropdown(
-        label="Acorde sugerido",
-        width=220,
-    )
-
-    remove_chord_dropdown = ft.Dropdown(
-        label="Acorde a eliminar",
-        width=220,
-    )
+    # --- DEFINICIÓN DE FUNCIONES AUXILIARES Y MANEJADORES DE EVENTOS ---
 
     def snack(msg: str):
         page.snack_bar = ft.SnackBar(ft.Text(msg))
@@ -257,9 +219,52 @@ def main(page: ft.Page):
     def on_key_or_genre_change(e):
         generar(None)
 
+    # --- DEFINICIÓN DE CONTROLES DE LA INTERFAZ ---
+
+    genre = ft.Dropdown(
+        label="Género",
+        width=180,
+        value="pop",
+        options=[
+            ft.dropdown.Option("pop"),
+            ft.dropdown.Option("rock"),
+            ft.dropdown.Option("jazz"),
+        ],
+    )
+
+    key = ft.Dropdown(
+        label="Tonalidad",
+        width=130,
+        value="C",
+        options=[ft.dropdown.Option(k) for k in KEYS],
+    )
+
     genre.on_change = on_key_or_genre_change
     key.on_change = on_key_or_genre_change
 
+    length_slider = ft.Slider(
+        min=4,
+        max=16,
+        divisions=12,
+        value=4,
+    )
+
+    edit_field = ft.TextField(
+        label="Editar progresión",
+        expand=True,
+    )
+
+    add_chord_dropdown = ft.Dropdown(
+        label="Acorde sugerido",
+        width=220,
+    )
+
+    remove_chord_dropdown = ft.Dropdown(
+        label="Acorde a eliminar",
+        width=220,
+    )
+
+    # Inicializar opciones del dropdown
     update_chord_dropdowns()
 
     # Panel de controles (Columna Izquierda)
