@@ -79,10 +79,25 @@ class ChordController:
         self.edit_field.value = ", ".join(self.state.progression)
 
         self.result_container.controls = [
-            progression_row(self.state.progression)
+            progression_row(self.state.progression, on_reorder=self.reorder_progression)
         ]
 
         self.page.update()
+
+    def reorder_progression(self, src_idx: int, dest_idx: int):
+        if src_idx == dest_idx:
+            return
+
+        # Perform the reordering in state
+        chord = self.state.progression.pop(src_idx)
+        self.state.progression.insert(dest_idx, chord)
+
+        # Refresh the UI to reflect new order
+        self.refresh_ui()
+
+        # Automatically update lyrics mapping if lyrics are loaded
+        if getattr(self, 'lyrics_input', None) and self.lyrics_input.value and self.lyrics_input.value.strip():
+            self.apply_progression_to_lyrics()
 
     def regenerate_progression(self, e=None):
         self.ensure_current_graph()
