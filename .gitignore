@@ -1,0 +1,139 @@
+# Bytecode compilado / archivos generados por Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.pyd
+
+# Distribuciones / empaquetado
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Instaladores
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Pruebas unitarias / cobertura
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Traducciones
+*.mo
+*.pot
+
+# Archivos de logs y bases de datos
+*.log
+*.sql
+*.sqlite
+*.db
+
+# Entornos virtuales
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.venv/
+virtualenv/
+
+# Variables de entorno
+.env
+.venv
+.envrc
+
+# Archivos específicos de PyCharm
+.idea/
+*.iml
+*.iws
+.idea_modules/
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dataSources.local.xml
+.idea/dataSources/
+.idea/sqlDataSources/
+.idea/dictionaries/
+.idea/httpRequests/
+.idea/caches/
+.idea/modules.xml
+.idea/vcs.xml
+
+# Archivos específicos de VS Code (por si lo usas también)
+.vscode/
+*.code-workspace
+
+# Archivos específicos de Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb
+
+# Archivos específicos de Flet
+*.flet.db
+.flet/
+flet.log
+
+# Archivos de caché de Python
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pyre/
+.pytype/
+
+# Archivos de análisis estático
+.ruff_cache/
+
+# Archivos de editor
+*.swp
+*.swo
+*~
+.*.swp
+.DS_Store
+Thumbs.db
+
+# Archivos de credenciales y secretos
+*.pem
+*.key
+*.crt
+secrets.py
+config_local.py
+credentials.json
+
+# Archivos de reportes
+*.html
+*.pdf
+*.xml
+
+# Archivos temporales
+*.tmp
+*.temp
+*.bak
+*.backup
