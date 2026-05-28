@@ -15,6 +15,8 @@ class ThemeColors:
             self.border = "#25283D"
             self.edge_regular = "#475569"
             self.edge_bidirectional = "#818CF8"
+            self.edge_min_color = "#475569"
+            self.edge_max_color = "#818CF8"
             self.divider = "#25283D"
         else:
             self.page_bg = "#F8FAFC"
@@ -25,6 +27,8 @@ class ThemeColors:
             self.border = "#E2E8F0"
             self.edge_regular = "#CBD5E1"
             self.edge_bidirectional = "#4F46E5"
+            self.edge_min_color = "#CBD5E1"
+            self.edge_max_color = "#4F46E5"
             self.divider = "#E2E8F0"
 
     @property

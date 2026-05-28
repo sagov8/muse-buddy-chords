@@ -189,6 +189,25 @@ class GraphVisualizer(ft.Container):
         )
         container.update()
 
+    def _interpolate_color(self, factor: float) -> str:
+        color_start = theme_colors.edge_min_color
+        color_end = theme_colors.edge_max_color
+        
+        r1 = int(color_start[1:3], 16)
+        g1 = int(color_start[3:5], 16)
+        b1 = int(color_start[5:7], 16)
+        
+        r2 = int(color_end[1:3], 16)
+        g2 = int(color_end[3:5], 16)
+        b2 = int(color_end[5:7], 16)
+        
+        r = int(r1 + (r2 - r1) * factor)
+        g = int(g1 + (g2 - g1) * factor)
+        b = int(b1 + (b2 - b1) * factor)
+        
+        opacity = 0.25 + 0.70 * factor
+        return f"#{r:02X}{g:02X}{b:02X},{opacity:.2f}"
+
     def draw_edges(self):
         nodes = self.graph_data.get("nodes", [])
         edges = self.graph_data.get("edges", [])
@@ -203,6 +222,12 @@ class GraphVisualizer(ft.Container):
             if (dst, src) in edge_set and src != dst:
                 bidirectional.add((src, dst))
                 
+        # Obtener los pesos min y max del grafo actual
+        weights = [e[2] for e in edges] if edges else []
+        min_w = min(weights) if weights else 0.0
+        max_w = max(weights) if weights else 1.0
+        w_range = max_w - min_w
+                
         for src, dst, weight in edges:
             if src not in self.positions or dst not in self.positions:
                 continue
@@ -210,12 +235,20 @@ class GraphVisualizer(ft.Container):
             p_s = self.positions[src]
             p_t = self.positions[dst]
             
-            # Estilos de color para aristas bidireccionales vs regulares
-            edge_color = theme_colors.edge_bidirectional if (src, dst) in bidirectional else theme_colors.edge_regular
+            # Calcular factor de peso normalizado o absoluto
+            if w_range > 0.01:
+                factor = (weight - min_w) / w_range
+            else:
+                factor = weight
+            factor = max(0.0, min(1.0, factor))
+            
+            # Obtener color y grosor según el factor
+            edge_color = self._interpolate_color(factor)
+            stroke_w = 1.8 + 0.6 * factor
             
             line_paint = ft.Paint(
                 color=edge_color,
-                stroke_width=2.2,
+                stroke_width=stroke_w,
                 style=ft.PaintingStyle.STROKE
             )
             
