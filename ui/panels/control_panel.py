@@ -119,7 +119,7 @@ def build_control_panel(controller):
                 ft.Divider(color="#25283D"),
 
                 ft.Text(
-                    "Modificar Grafo Nativamente",
+                    "Modificar Acordes de la Progresión",
                     size=15,
                     weight=ft.FontWeight.BOLD,
                     color="#EEF2F6",

@@ -4,7 +4,6 @@ from ui.styles import PANEL_BORDER
 
 def build_visualizer_panel(visualizer):
     return ft.Container(
-        expand=True,
         bgcolor="#141521",
         border_radius=16,
         padding=20,

@@ -8,7 +8,7 @@ from core.chord_theory import chord_suggestions_for_key
 from audio.player import play_progression
 from ui.components import progression_row
 from services.genre_service import get_genre_mode
-
+from services.lyric_chord_mapper import apply_chords_to_lyrics
 
 class ChordController:
     def __init__(self, page: ft.Page, state):
@@ -222,3 +222,25 @@ class ChordController:
 
             self.state.current_genre = genre
             self.state.current_key = key
+
+    def apply_progression_to_lyrics(self, e=None):
+        lyrics = self.lyrics_input.value or ""
+
+        if not lyrics.strip():
+            self.snack("Pega una letra primero.")
+            return
+
+        if not self.state.progression:
+            self.snack("Genera una progresión primero.")
+            return
+
+        result = apply_chords_to_lyrics(
+            lyrics=lyrics,
+            progression=self.state.progression,
+        )
+
+        self.state.lyrics = lyrics
+        self.state.lyrics_with_chords = result
+
+        self.lyrics_output.value = result
+        self.page.update()

@@ -9,3 +9,6 @@ class AppState:
 
         self.current_genre = None
         self.current_key = None
+
+        self.lyrics = ""
+        self.lyrics_with_chords = ""
