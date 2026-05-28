@@ -1,0 +1,24 @@
+{
+  "name": "jazz",
+  "mode": "major",
+  "nodes": [
+    "Imaj7",
+    "ii7",
+    "iii7",
+    "IVmaj7",
+    "V7",
+    "vi7"
+  ],
+  "edges": [
+    ["ii7", "V7", 1.0],
+    ["V7", "Imaj7", 0.9],
+    ["V7", "vi7", 0.4],
+
+    ["Imaj7", "vi7", 0.5],
+    ["Imaj7", "IVmaj7", 0.6],
+
+    ["IVmaj7", "iii7", 0.5],
+    ["iii7", "vi7", 0.8],
+    ["vi7", "ii7", 0.9]
+  ]
+}
