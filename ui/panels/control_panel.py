@@ -43,8 +43,8 @@ def build_control_panel(controller):
         width=220,
     )
 
-    genre.on_change = controller.load_genre_graph
-    key.on_change = controller.load_genre_graph
+    genre.on_change = controller.change_base_graph
+    key.on_change = controller.change_base_graph
 
     controller.bind_controls(
         genre_dropdown=genre,
@@ -106,7 +106,7 @@ def build_control_panel(controller):
                         ),
 
                         ft.TextButton(
-                            "Restablecer Grafo",
+                            "Reiniciar Progresión",
                             icon=ft.icons.Icons.RESTORE,
                             icon_color="#94A3B8",
                             on_click=controller.load_genre_graph,

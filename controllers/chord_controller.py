@@ -52,7 +52,7 @@ class ChordController:
     def load_initial_graph(self):
         self.load_genre_graph(None)
 
-    def load_genre_graph(self, e):
+    def load_genre_graph(self, e=None):
         genre = self.genre_dropdown.value
         key = self.key_dropdown.value
 
@@ -60,6 +60,10 @@ class ChordController:
 
         data = load_genre(genre, key=key)
         self.refresh_graph(data, reset_layout=True)
+
+        self.state.current_genre = genre
+        self.state.current_key = key
+
         self.regenerate_progression()
 
     def refresh_graph(self, data: dict, reset_layout: bool = False):
@@ -79,6 +83,8 @@ class ChordController:
         self.page.update()
 
     def regenerate_progression(self, e=None):
+        self.ensure_current_graph()
+
         nodes = self.state.graph_data["nodes"]
 
         if not nodes:
@@ -188,3 +194,31 @@ class ChordController:
         self.refresh_graph(new_data)
         self.regenerate_progression()
         self.snack(f"'{chord}' eliminado del grafo.")
+
+    def change_base_graph(self, e=None):
+        genre = self.genre_dropdown.value
+        key = self.key_dropdown.value
+
+        self.state.mode = get_genre_mode(genre)
+
+        data = load_genre(genre, key=key)
+        self.refresh_graph(data, reset_layout=True)
+        self.regenerate_progression()
+
+    def ensure_current_graph(self):
+        genre = self.genre_dropdown.value
+        key = self.key_dropdown.value
+
+        graph_changed = (
+                genre != self.state.current_genre
+                or key != self.state.current_key
+        )
+
+        if graph_changed:
+            self.state.mode = get_genre_mode(genre)
+
+            data = load_genre(genre, key=key)
+            self.refresh_graph(data, reset_layout=True)
+
+            self.state.current_genre = genre
+            self.state.current_key = key

@@ -2,7 +2,7 @@ import flet as ft
 
 from app.state import AppState
 from ui.layout import build_layout
-from controller.chord_controller import ChordController
+from controllers.chord_controller import ChordController
 
 
 def configure_page(page: ft.Page):
