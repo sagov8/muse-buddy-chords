@@ -1,20 +1,28 @@
 import json
-import os
+from pathlib import Path
 from typing import Callable
 from functools import reduce
+
 from core.chord_theory import resolve_roman
 
-GraphData = dict  # {"nodes": [...], "edges": [...]}
+
+GraphData = dict
 Transform = Callable[[GraphData], GraphData]
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+DATA_DIR = BASE_DIR / "data"
 
 
 def load_genre(name: str, key: str = "C") -> GraphData:
-    path = os.path.join("data", f"{name}.json")
-    with open(path, encoding="utf-8") as f:
+    path = DATA_DIR / f"{name}.json"
+
+    with path.open("r", encoding="utf-8") as f:
         raw = json.load(f)
 
     mode = raw.get("mode", "major")
-    resolve = lambda symbol: resolve_roman(symbol, key, mode)
+
+    def resolve(symbol: str) -> str:
+        return resolve_roman(symbol, key, mode)
 
     return {
         "nodes": [resolve(n) for n in raw["nodes"]],

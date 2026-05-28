@@ -138,3 +138,5 @@ credentials.json
 *.bak
 *.backup
 /generated
+generated/output.wav
+/generated
