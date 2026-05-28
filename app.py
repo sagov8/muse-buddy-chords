@@ -1,16 +1,18 @@
 import os
+import json
 import flet as ft
 import webbrowser
 import random
 
 from core.genre_loader import load_genre
-from core.graph_transforms import add_chord, remove_chord
+from core.graph_transforms import add_chord, remove_chord, get_auto_connections
 from core.graph_engine import ChordGraph
 from core.progression_generator import generate
 from audio.player import play_progression
 from ui.components import progression_row
 from ui.graph_visualizer import GraphVisualizer
 from util.style_connections import STYLE_CONNECTIONS
+from core.chord_theory import chord_suggestions_for_key
 
 
 KEYS = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
@@ -42,91 +44,8 @@ graph_engine = ChordGraph()
 _state = {
     "progression": [],
     "graph_data": {"nodes": [], "edges": []},
+    "mode": "major",
 }
-
-
-def _parse_roman(numeral: str):
-    accidental = 0
-
-    if numeral.startswith("b"):
-        accidental = -1
-        numeral = numeral[1:]
-    elif numeral.startswith("#"):
-        accidental = 1
-        numeral = numeral[1:]
-
-    is_dim = "°" in numeral
-    s = numeral.replace("°", "")
-
-    i = 0
-    while i < len(s) and s[i] in "IiVv":
-        i += 1
-
-    roman = s[:i]
-    suffix = s[i:]
-    degree = _ROMAN_IDX[roman.lower()]
-    is_upper = roman == roman.upper()
-
-    if is_dim:
-        suffix = "dim" + suffix
-
-    return degree, is_upper, suffix, accidental
-
-
-def resolve_roman(numeral: str, root: str, mode: str = "major") -> str:
-    scale = MAJOR_SCALE if mode == "major" else MINOR_SCALE
-    degree, is_upper, suffix, accidental = _parse_roman(numeral)
-
-    root = ENHARMONICS.get(root, root)
-    chord_root = NOTES[
-        (NOTES.index(root) + scale[degree] + accidental) % 12
-    ]
-
-    if is_upper:
-        return chord_root + suffix
-
-    if suffix.startswith(("m", "dim")):
-        return chord_root + suffix
-
-    return chord_root + "m" + suffix
-
-
-def chord_suggestions_for_key(key: str, mode: str = "major") -> list[tuple[str, str]]:
-    diatonic = [
-        "I",
-        "ii",
-        "iii",
-        "IV",
-        "V",
-        "vi",
-        "vii°",
-    ]
-
-    borrowed = [
-        "bIII",
-        "iv",
-        "bVI",
-        "bVII",
-    ]
-
-    secondary = [
-        "II",
-        "III",
-        "VI",
-    ]
-
-    romans = diatonic + borrowed + secondary
-
-    result = []
-    seen = set()
-
-    for roman in romans:
-        chord = resolve_roman(roman, key, mode)
-        if chord not in seen:
-            result.append((roman, chord))
-            seen.add(chord)
-
-    return result
 
 
 def main(page: ft.Page):
@@ -193,7 +112,11 @@ def main(page: ft.Page):
         page.update()
 
     def update_chord_dropdowns():
-        suggestions = chord_suggestions_for_key(key.value, "major")
+        suggestions = chord_suggestions_for_key(
+            key.value,
+            genre.value,
+            _state.get("mode", "major")
+        )
 
         current_nodes = set(_state["graph_data"]["nodes"])
 
@@ -245,36 +168,24 @@ def main(page: ft.Page):
         refresh_ui()
 
     def auto_connections_for_new_chord(chord: str):
-        suggestions = chord_suggestions_for_key(key.value, "major")
-        chord_to_roman = {chord_name: roman for roman, chord_name in suggestions}
-
-        roman = chord_to_roman.get(chord)
-        style_map = STYLE_CONNECTIONS.get(genre.value, {})
-
-        if roman not in style_map:
-            return [], []
-
-        outgoing_romans = style_map[roman]
-
-        outgoing = []
-        for target_roman, weight in outgoing_romans:
-            target_chord = resolve_roman(target_roman, key.value, "major")
-
-            if target_chord in _state["graph_data"]["nodes"]:
-                outgoing.append((target_chord, weight))
-
-        incoming = []
-        for source_roman, targets in style_map.items():
-            for target_roman, weight in targets:
-                if target_roman == roman:
-                    source_chord = resolve_roman(source_roman, key.value, "major")
-
-                    if source_chord in _state["graph_data"]["nodes"]:
-                        incoming.append((source_chord, weight))
-
-        return incoming, outgoing
+        return get_auto_connections(
+            chord,
+            _state["graph_data"]["nodes"],
+            key.value,
+            _state.get("mode", "major"),
+            genre.value
+        )
 
     def generar(e):
+        try:
+            path = os.path.join("data", f"{genre.value}.json")
+            with open(path, encoding="utf-8") as f:
+                raw = json.load(f)
+            mode_val = raw.get("mode", "major")
+        except Exception:
+            mode_val = "major"
+            
+        _state["mode"] = mode_val
         data = load_genre(genre.value, key=key.value)
         refresh_graph(data, reset_layout=True)
         regenerate_progression()
@@ -344,13 +255,7 @@ def main(page: ft.Page):
         snack(f"'{chord}' eliminado del grafo.")
 
     def on_key_or_genre_change(e):
-        _state["progression"] = []
-        _state["graph_data"] = {"nodes": [], "edges": []}
-        result_container.controls.clear()
-        edit_field.value = ""
-        visualizer.set_graph_data({"nodes": [], "edges": []}, reset_layout=True)
-        update_chord_dropdowns()
-        page.update()
+        generar(None)
 
     genre.on_change = on_key_or_genre_change
     key.on_change = on_key_or_genre_change
@@ -372,16 +277,31 @@ def main(page: ft.Page):
                 ft.Text("Longitud de la progresión", size=13, color="#94A3B8"),
                 length_slider,
                 ft.Container(
-                    content=ft.ElevatedButton(
-                        "Generar Progresión",
-                        on_click=generar,
-                        icon=ft.icons.Icons.REFRESH,
-                        style=ft.ButtonStyle(
-                            color="white",
-                            bgcolor="#4F46E5",
-                            padding=15,
-                            shape=ft.RoundedRectangleBorder(radius=8),
-                        ),
+                    content=ft.Row(
+                        controls=[
+                            ft.ElevatedButton(
+                                "Generar Progresión",
+                                on_click=lambda e: regenerate_progression(),
+                                icon=ft.icons.Icons.AUTO_AWESOME,
+                                style=ft.ButtonStyle(
+                                    color="white",
+                                    bgcolor="#4F46E5",
+                                    padding=15,
+                                    shape=ft.RoundedRectangleBorder(radius=8),
+                                ),
+                            ),
+                            ft.TextButton(
+                                "Restablecer Grafo",
+                                icon=ft.icons.Icons.RESTORE,
+                                icon_color="#94A3B8",
+                                on_click=generar,
+                                style=ft.ButtonStyle(
+                                    color="#94A3B8",
+                                ),
+                            ),
+                        ],
+                        alignment=ft.MainAxisAlignment.START,
+                        spacing=10,
                     ),
                     margin=ft.margin.Margin(top=5, bottom=10)
                 ),
@@ -488,6 +408,9 @@ def main(page: ft.Page):
             visualizer_panel
         ], expand=True)
     )
+
+    # Cargar grafo y progresión por defecto al inicio
+    generar(None)
 
 
 ft.app(target=main)

@@ -137,3 +137,4 @@ credentials.json
 *.temp
 *.bak
 *.backup
+/generated
