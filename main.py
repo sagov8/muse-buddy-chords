@@ -5,13 +5,15 @@ from ui.layout import build_layout
 from controllers.chord_controller import ChordController
 
 
+from ui.styles import theme_colors
+
 def configure_page(page: ft.Page):
     page.title = "Chord Generator"
     page.window_width = 1250
     page.window_height = 820
     page.window_resizable = True
-    page.theme_mode = ft.ThemeMode.DARK
-    page.bgcolor = "#0B0C10"
+    page.theme_mode = ft.ThemeMode.LIGHT if not theme_colors.is_dark else ft.ThemeMode.DARK
+    page.bgcolor = theme_colors.page_bg
     page.padding = 15
     page.spacing = 15
 

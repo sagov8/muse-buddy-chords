@@ -1,13 +1,13 @@
 import flet as ft
-from ui.styles import PANEL_BORDER
+from ui.styles import theme_colors
 
 
 def build_visualizer_panel(visualizer):
     return ft.Container(
-        bgcolor="#141521",
+        bgcolor=theme_colors.panel_bg,
         border_radius=16,
         padding=20,
-        border=PANEL_BORDER,
+        border=theme_colors.panel_border,
         content=ft.Column(
             spacing=10,
             expand=True,
@@ -19,14 +19,14 @@ def build_visualizer_panel(visualizer):
                             "Visualizador del Grafo de Acordes",
                             size=22,
                             weight=ft.FontWeight.BOLD,
-                            color="#EEF2F6",
+                            color=theme_colors.text_title,
                         ),
                     ]
                 ),
                 ft.Text(
                     "Haz clic y arrastra los acordes para reposicionarlos.",
                     size=13,
-                    color="#94A3B8",
+                    color=theme_colors.text_sub,
                 ),
                 ft.Container(
                     content=visualizer,
@@ -35,4 +35,4 @@ def build_visualizer_panel(visualizer):
                 ),
             ],
         ),
-    )
+    )

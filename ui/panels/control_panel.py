@@ -1,34 +1,70 @@
 import flet as ft
-from ui.styles import PANEL_BORDER
+from ui.styles import theme_colors
 
 from app.constants import KEYS, GENRES
 
 
 def build_control_panel(controller):
+    current_genre = "pop"
+    current_key = "C"
+    current_length = 4
+    current_edit = ""
+    
+    if getattr(controller, 'genre_dropdown', None) and controller.genre_dropdown.value:
+        current_genre = controller.genre_dropdown.value
+    elif controller.state and controller.state.current_genre:
+        current_genre = controller.state.current_genre
+        
+    if getattr(controller, 'key_dropdown', None) and controller.key_dropdown.value:
+        current_key = controller.key_dropdown.value
+    elif controller.state and controller.state.current_key:
+        current_key = controller.state.current_key
+        
+    if getattr(controller, 'length_slider', None) and controller.length_slider.value is not None:
+        current_length = controller.length_slider.value
+        
+    if getattr(controller, 'edit_field', None) and controller.edit_field.value is not None:
+        current_edit = controller.edit_field.value
+    elif controller.state and controller.state.progression:
+        current_edit = ", ".join(controller.state.progression)
+
     genre = ft.Dropdown(
         label="Género",
         width=180,
-        value="pop",
+        value=current_genre,
         options=[ft.dropdown.Option(g) for g in GENRES],
     )
 
     key = ft.Dropdown(
         label="Tonalidad",
         width=130,
-        value="C",
+        value=current_key,
         options=[ft.dropdown.Option(k) for k in KEYS],
     )
+
+    length_label = ft.Text(
+        f"Longitud de la progresión: {int(current_length)} acordes",
+        size=13,
+        color=theme_colors.text_sub,
+    )
+
+    def on_slider_change(e):
+        length_label.value = f"Longitud de la progresión: {int(e.control.value)} acordes"
+        length_label.update()
 
     length_slider = ft.Slider(
         min=4,
         max=16,
         divisions=12,
-        value=4,
+        value=current_length,
+        label="{value}",
+        on_change=on_slider_change,
     )
 
     edit_field = ft.TextField(
         label="Editar progresión",
         expand=True,
+        value=current_edit,
     )
 
     result_container = ft.Column()
@@ -59,42 +95,50 @@ def build_control_panel(controller):
 
     return ft.Container(
         width=400,
-        bgcolor="#141521",
+        bgcolor=theme_colors.panel_bg,
         border_radius=16,
         padding=20,
-        border=PANEL_BORDER,
+        border=theme_colors.panel_border,
         content=ft.Column(
             scroll=ft.ScrollMode.AUTO,
             spacing=12,
             controls=[
-                ft.Text(
-                    "Generador de Progresiones",
-                    size=26,
-                    weight=ft.FontWeight.BOLD,
-                    color="#EEF2F6",
+                ft.Row(
+                    [
+                        ft.Text(
+                            "Generador",
+                            size=24,
+                            weight=ft.FontWeight.BOLD,
+                            color=theme_colors.text_title,
+                            expand=True,
+                        ),
+                        ft.IconButton(
+                            icon=ft.icons.Icons.SUNNY if theme_colors.is_dark else ft.icons.Icons.DARK_MODE,
+                            icon_color=theme_colors.text_title,
+                            on_click=controller.toggle_theme,
+                            tooltip="Cambiar tema (claro/oscuro)",
+                        ),
+                    ],
+                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
                 ),
 
                 ft.Text(
                     "Configuración",
                     size=14,
-                    color="#94A3B8",
+                    color=theme_colors.text_sub,
                     weight=ft.FontWeight.W_500,
                 ),
 
                 ft.Row([genre, key], spacing=10),
 
-                ft.Text(
-                    "Longitud de la progresión",
-                    size=13,
-                    color="#94A3B8",
-                ),
+                length_label,
 
                 length_slider,
 
                 ft.Row(
                     controls=[
                         ft.ElevatedButton(
-                            "Generar Progresión",
+                            "Generar",
                             on_click=controller.regenerate_progression,
                             icon=ft.icons.Icons.AUTO_AWESOME,
                             style=ft.ButtonStyle(
@@ -106,23 +150,23 @@ def build_control_panel(controller):
                         ),
 
                         ft.TextButton(
-                            "Reiniciar Progresión",
+                            "Reiniciar",
                             icon=ft.icons.Icons.RESTORE,
-                            icon_color="#94A3B8",
+                            icon_color=theme_colors.text_sub,
                             on_click=controller.load_genre_graph,
-                            style=ft.ButtonStyle(color="#94A3B8"),
+                            style=ft.ButtonStyle(color=theme_colors.text_sub),
                         ),
                     ],
                     spacing=10,
                 ),
 
-                ft.Divider(color="#25283D"),
+                ft.Divider(color=theme_colors.divider),
 
                 ft.Text(
-                    "Modificar Acordes de la Progresión",
+                    "Modificar Acordes",
                     size=15,
                     weight=ft.FontWeight.BOLD,
-                    color="#EEF2F6",
+                    color=theme_colors.text_title,
                 ),
 
                 ft.Row(
@@ -153,13 +197,13 @@ def build_control_panel(controller):
                     spacing=10,
                 ),
 
-                ft.Divider(color="#25283D"),
+                ft.Divider(color=theme_colors.divider),
 
                 ft.Text(
                     "Progreso y Edición",
                     size=15,
                     weight=ft.FontWeight.BOLD,
-                    color="#EEF2F6",
+                    color=theme_colors.text_title,
                 ),
 
                 edit_field,
@@ -167,7 +211,7 @@ def build_control_panel(controller):
                 ft.Row(
                     [
                         ft.ElevatedButton(
-                            "Guardar edición",
+                            "Guardar",
                             on_click=controller.save_edit,
                             icon=ft.icons.Icons.SAVE,
                             style=ft.ButtonStyle(
@@ -192,10 +236,10 @@ def build_control_panel(controller):
                 ft.Text(
                     "Progresión Generada:",
                     size=13,
-                    color="#94A3B8",
+                    color=theme_colors.text_sub,
                 ),
 
                 result_container,
             ],
         ),
-    )
+    )

@@ -23,6 +23,8 @@ class ChordController:
         self.add_chord_dropdown = None
         self.remove_chord_dropdown = None
         self.visualizer = None
+        self.lyrics_input = None
+        self.lyrics_output = None
 
     def bind_controls(
         self,
@@ -244,3 +246,27 @@ class ChordController:
 
         self.lyrics_output.value = result
         self.page.update()
+
+    def toggle_theme(self, e=None):
+        from ui.styles import theme_colors
+        from ui.layout import build_layout
+
+        is_dark = self.page.theme_mode == ft.ThemeMode.DARK
+        new_is_dark = not is_dark
+        self.page.theme_mode = ft.ThemeMode.DARK if new_is_dark else ft.ThemeMode.LIGHT
+        theme_colors.update_theme(new_is_dark)
+        self.page.bgcolor = theme_colors.page_bg
+
+        # Recreate the layout and update the page
+        new_layout = build_layout(self)
+        self.page.controls[0] = new_layout
+
+        # Refresh graph to apply new colors
+        if self.state.graph_data:
+            self.refresh_graph(self.state.graph_data, reset_layout=False)
+
+        # Refresh generated progression display
+        if self.state.progression:
+            self.refresh_ui()
+
+        self.page.update()

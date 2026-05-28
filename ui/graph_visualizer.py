@@ -2,6 +2,7 @@ import flet as ft
 import flet.canvas as cv
 import networkx as nx
 import math
+from ui.styles import theme_colors
 
 class GraphVisualizer(ft.Container):
     def __init__(self, width=700, height=520):
@@ -27,14 +28,9 @@ class GraphVisualizer(ft.Container):
             content=self.stack,
             width=self.canvas_width + 10,
             height=self.canvas_height + 10,
-            bgcolor="#1A1C29",
+            bgcolor=theme_colors.visualizer_bg,
             border_radius=16,
-            border=ft.Border(
-                top=ft.BorderSide(1, "#25283D"),
-                right=ft.BorderSide(1, "#25283D"),
-                bottom=ft.BorderSide(1, "#25283D"),
-                left=ft.BorderSide(1, "#25283D")
-            ),
+            border=theme_colors.panel_border,
             padding=5,
         )
 
@@ -102,10 +98,12 @@ class GraphVisualizer(ft.Container):
             def make_drag_handlers(node_name, ctrl):
                 start_x = [0.0]
                 start_y = [0.0]
+                last_update = [0.0]
                 
                 def on_pan_start(e: ft.DragStartEvent):
                     start_x[0] = self.positions[node_name][0]
                     start_y[0] = self.positions[node_name][1]
+                    last_update[0] = 0.0
                     
                 def on_pan_update(e: ft.DragUpdateEvent):
                     dx = e.global_delta.x if e.global_delta else 0
@@ -126,12 +124,20 @@ class GraphVisualizer(ft.Container):
                     # Reposicionar el detector del nodo en el Stack
                     ctrl.left = self.positions[node_name][0] - self.node_radius
                     ctrl.top = self.positions[node_name][1] - self.node_radius
-                    ctrl.update()
                     
                     # Redibujar las conexiones (aristas) en el Canvas
                     self.draw_edges()
-                    self.canvas.update()
-                return on_pan_start, on_pan_update
+                    
+                    import time
+                    now = time.time()
+                    if now - last_update[0] > 0.016:  # ~60 FPS
+                        self.stack.update()
+                        last_update[0] = now
+                        
+                def on_pan_end(e: ft.DragEndEvent):
+                    self.stack.update()
+                    
+                return on_pan_start, on_pan_update, on_pan_end
             
             node_container = ft.Container(
                 content=ft.Text(node, size=15, weight=ft.FontWeight.BOLD, color="white"),
@@ -159,9 +165,10 @@ class GraphVisualizer(ft.Container):
                 top=y - self.node_radius,
             )
             
-            on_start, on_update = make_drag_handlers(node, detector_control)
+            on_start, on_update, on_end = make_drag_handlers(node, detector_control)
             detector_control.on_pan_start = on_start
             detector_control.on_pan_update = on_update
+            detector_control.on_pan_end = on_end
             node_container.on_hover = lambda e, nc=node_container: self._on_node_hover(e, nc)
             
             self.stack.controls.append(detector_control)
@@ -204,7 +211,7 @@ class GraphVisualizer(ft.Container):
             p_t = self.positions[dst]
             
             # Estilos de color para aristas bidireccionales vs regulares
-            edge_color = "#818CF8" if (src, dst) in bidirectional else "#475569"
+            edge_color = theme_colors.edge_bidirectional if (src, dst) in bidirectional else theme_colors.edge_regular
             
             line_paint = ft.Paint(
                 color=edge_color,
@@ -218,7 +225,7 @@ class GraphVisualizer(ft.Container):
             )
             
             text_paint = ft.Paint(
-                color="#94A3B8",
+                color=theme_colors.text_sub,
                 style=ft.PaintingStyle.FILL
             )
             
@@ -279,7 +286,7 @@ class GraphVisualizer(ft.Container):
                         x=pc_x,
                         y=pc_y - 12,
                         value=f"{weight:.1f}",
-                        style=ft.TextStyle(size=10, color="#94A3B8"),
+                        style=ft.TextStyle(size=10, color=theme_colors.text_sub),
                         alignment=ft.alignment.Alignment.CENTER
                     )
                 )
@@ -370,7 +377,7 @@ class GraphVisualizer(ft.Container):
                             x=label_x,
                             y=label_y - 6,
                             value=f"{weight:.1f}",
-                            style=ft.TextStyle(size=11, color="#94A3B8", weight=ft.FontWeight.BOLD),
+                            style=ft.TextStyle(size=11, color=theme_colors.text_sub, weight=ft.FontWeight.BOLD),
                             alignment=ft.alignment.Alignment.CENTER
                         )
                     )
@@ -418,7 +425,7 @@ class GraphVisualizer(ft.Container):
                             x=label_x,
                             y=label_y - 6,
                             value=f"{weight:.1f}",
-                            style=ft.TextStyle(size=11, color="#94A3B8", weight=ft.FontWeight.BOLD),
+                            style=ft.TextStyle(size=11, color=theme_colors.text_sub, weight=ft.FontWeight.BOLD),
                             alignment=ft.alignment.Alignment.CENTER
                         )
                     )

@@ -15,7 +15,10 @@ def apply_chords_to_lyrics(lyrics: str, progression: list[str]) -> str:
             continue
 
         chord = progression[chord_index % len(progression)]
-        result.append(f"[{chord}] {line}")
+        leading_spaces = len(line) - len(line.lstrip())
+        chord_line = " " * leading_spaces + chord
+        result.append(chord_line)
+        result.append(line)
 
         chord_index += 1
 
