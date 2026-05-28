@@ -9,6 +9,7 @@ from core.graph_engine import ChordGraph
 from core.progression_generator import generate
 from audio.player import play_progression
 from ui.components import progression_row
+from ui.graph_visualizer import GraphVisualizer
 from util.style_connections import STYLE_CONNECTIONS
 
 
@@ -130,7 +131,20 @@ def chord_suggestions_for_key(key: str, mode: str = "major") -> list[tuple[str, 
 
 def main(page: ft.Page):
     page.title = "Chord Generator"
+    page.window_width = 1250
+    page.window_height = 820
+    page.window_resizable = True
+    page.theme_mode = ft.ThemeMode.DARK
+    page.bgcolor = "#0B0C10"
+    page.padding = 15
+    page.spacing = 15
+    
+    page.fonts = {
+        "Outfit": "https://github.com/google/fonts/raw/main/ofl/outfit/Outfit%5Bwght%5D.ttf"
+    }
+    page.theme = ft.Theme(font_family="Outfit")
 
+    visualizer = GraphVisualizer(width=720, height=540)
     result_container = ft.Column()
 
     genre = ft.Dropdown(
@@ -200,13 +214,12 @@ def main(page: ft.Page):
         add_chord_dropdown.value = None
         remove_chord_dropdown.value = None
 
-    def refresh_graph(data: dict):
+    def refresh_graph(data: dict, reset_layout: bool = False):
         _state["graph_data"] = data
         graph_engine.build(data)
-        graph_engine.render()
-
-        path = os.path.abspath("generated/graph.html")
-        webbrowser.open(f"file://{path}")
+        
+        # Renderizar en el visualizador integrado
+        visualizer.set_graph_data(data, reset_layout=reset_layout)
 
         update_chord_dropdowns()
 
@@ -261,9 +274,9 @@ def main(page: ft.Page):
 
         return incoming, outgoing
 
-    async def generar(e):
+    def generar(e):
         data = load_genre(genre.value, key=key.value)
-        refresh_graph(data)
+        refresh_graph(data, reset_layout=True)
         regenerate_progression()
 
     def reproducir(e):
@@ -335,6 +348,7 @@ def main(page: ft.Page):
         _state["graph_data"] = {"nodes": [], "edges": []}
         result_container.controls.clear()
         edit_field.value = ""
+        visualizer.set_graph_data({"nodes": [], "edges": []}, reset_layout=True)
         update_chord_dropdowns()
         page.update()
 
@@ -343,59 +357,136 @@ def main(page: ft.Page):
 
     update_chord_dropdowns()
 
+    # Panel de controles (Columna Izquierda)
+    control_panel = ft.Container(
+        content=ft.Column(
+            controls=[
+                ft.Text(
+                    "Generador de Progresiones",
+                    size=26,
+                    weight=ft.FontWeight.BOLD,
+                    color="#EEF2F6"
+                ),
+                ft.Text("Configuración", size=14, color="#94A3B8", weight=ft.FontWeight.W_500),
+                ft.Row([genre, key], spacing=10),
+                ft.Text("Longitud de la progresión", size=13, color="#94A3B8"),
+                length_slider,
+                ft.Container(
+                    content=ft.ElevatedButton(
+                        "Generar Progresión",
+                        on_click=generar,
+                        icon=ft.icons.Icons.REFRESH,
+                        style=ft.ButtonStyle(
+                            color="white",
+                            bgcolor="#4F46E5",
+                            padding=15,
+                            shape=ft.RoundedRectangleBorder(radius=8),
+                        ),
+                    ),
+                    margin=ft.margin.Margin(top=5, bottom=10)
+                ),
+                ft.Divider(color="#25283D"),
+                
+                ft.Text("Modificar Grafo Nativamente", size=15, weight=ft.FontWeight.BOLD, color="#EEF2F6"),
+                ft.Row([
+                    add_chord_dropdown,
+                    ft.IconButton(
+                        icon=ft.icons.Icons.ADD,
+                        icon_color="#34D399",
+                        icon_size=32,
+                        tooltip="Añadir acorde al grafo",
+                        on_click=on_add_chord,
+                    ),
+                ], spacing=10),
+                ft.Row([
+                    remove_chord_dropdown,
+                    ft.IconButton(
+                        icon=ft.icons.Icons.REMOVE,
+                        icon_color="#F87171",
+                        icon_size=32,
+                        tooltip="Eliminar acorde del grafo",
+                        on_click=on_remove_chord,
+                    ),
+                ], spacing=10),
+                ft.Divider(color="#25283D"),
+                
+                ft.Text("Progreso y Edición", size=15, weight=ft.FontWeight.BOLD, color="#EEF2F6"),
+                edit_field,
+                ft.Row([
+                    ft.ElevatedButton(
+                        "Guardar edición",
+                        on_click=guardar_edicion,
+                        icon=ft.icons.Icons.SAVE,
+                        style=ft.ButtonStyle(shape=ft.RoundedRectangleBorder(radius=8))
+                    ),
+                    ft.ElevatedButton(
+                        "Escuchar",
+                        on_click=reproducir,
+                        icon=ft.icons.Icons.PLAY_ARROW,
+                        style=ft.ButtonStyle(
+                            color="white",
+                            bgcolor="#10B981",
+                            shape=ft.RoundedRectangleBorder(radius=8)
+                        )
+                    ),
+                ], spacing=10),
+                ft.Text("Progresión Generada:", size=13, color="#94A3B8"),
+                result_container,
+            ],
+            scroll=ft.ScrollMode.AUTO,
+            spacing=12,
+        ),
+        width=400,
+        bgcolor="#141521",
+        border_radius=16,
+        border=ft.Border(
+            top=ft.BorderSide(1, "#25283D"),
+            right=ft.BorderSide(1, "#25283D"),
+            bottom=ft.BorderSide(1, "#25283D"),
+            left=ft.BorderSide(1, "#25283D")
+        ),
+        padding=20,
+    )
+
+    # Panel del visualizador (Columna Derecha)
+    visualizer_panel = ft.Container(
+        content=ft.Column(
+            controls=[
+                ft.Row([
+                    ft.Icon(ft.icons.Icons.MUSIC_NOTE, color="#6366F1", size=24),
+                    ft.Text("Visualizador del Grafo de Acordes", size=22, weight=ft.FontWeight.BOLD, color="#EEF2F6"),
+                ], alignment=ft.MainAxisAlignment.START, vertical_alignment=ft.CrossAxisAlignment.CENTER),
+                ft.Text(
+                    "Haz clic y arrastra los acordes para reposicionarlos. Los cambios y conexiones se recalculan dinámicamente.",
+                    size=13,
+                    color="#94A3B8"
+                ),
+                ft.Container(
+                    content=visualizer,
+                    alignment=ft.alignment.Alignment.CENTER,
+                    expand=True,
+                )
+            ],
+            spacing=10,
+            expand=True,
+        ),
+        expand=True,
+        bgcolor="#141521",
+        border_radius=16,
+        border=ft.Border(
+            top=ft.BorderSide(1, "#25283D"),
+            right=ft.BorderSide(1, "#25283D"),
+            bottom=ft.BorderSide(1, "#25283D"),
+            left=ft.BorderSide(1, "#25283D")
+        ),
+        padding=20,
+    )
+
     page.add(
-        ft.Text(
-            "Generador de Progresiones",
-            size=28,
-            weight=ft.FontWeight.BOLD,
-        ),
-
-        ft.Row([genre, key]),
-
-        ft.Text("Longitud"),
-        length_slider,
-
-        ft.ElevatedButton(
-            "Generar",
-            on_click=generar,
-        ),
-
-        ft.Divider(),
-
-        ft.Text("Modificar grafo", size=16),
-
         ft.Row([
-            add_chord_dropdown,
-            ft.ElevatedButton(
-                "+ Añadir",
-                on_click=on_add_chord,
-            ),
-        ]),
-
-        ft.Row([
-            remove_chord_dropdown,
-            ft.ElevatedButton(
-                "− Eliminar",
-                on_click=on_remove_chord,
-            ),
-        ]),
-
-        ft.Divider(),
-
-        edit_field,
-
-        ft.Row([
-            ft.ElevatedButton(
-                "Guardar edición",
-                on_click=guardar_edicion,
-            ),
-            ft.ElevatedButton(
-                "▶ Escuchar",
-                on_click=reproducir,
-            ),
-        ]),
-
-        result_container,
+            control_panel,
+            visualizer_panel
+        ], expand=True)
     )
 
 
