@@ -3,7 +3,29 @@ from typing import TypedDict
 from copy import deepcopy
 
 NOTES = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"]
-ENHARMONICS = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#"}
+ENHARMONICS = {"Db": "C#", "Eb": "D#", "Gb": "F#", "Ab": "G#", "Bb": "A#", "Cb": "B", "Fb": "E", "E#": "F", "B#": "C"}
+
+# Mapeo de nota raíz de tonalidad a la lista de deletreo de las 12 notas cromáticas.
+# El índice representa la nota cromática (0 a 11 en NOTES)
+KEY_SPELLINGS = {
+    "C":  ["C", "Db", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+    "C#": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+    "Db": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "D":  ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
+    "D#": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "Eb": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "E":  ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+    "F":  ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "F#": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+    "Gb": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "G":  ["C", "C#", "D", "Eb", "E", "F", "F#", "G", "Ab", "A", "Bb", "B"],
+    "G#": ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+    "Ab": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "A":  ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "Bb", "B"],
+    "A#": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "Bb": ["C", "Db", "D", "Eb", "E", "F", "Gb", "G", "Ab", "A", "Bb", "B"],
+    "B":  ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"],
+}
 
 MAJOR_SCALE = [0, 2, 4, 5, 7, 9, 11]
 MINOR_SCALE = [0, 2, 3, 5, 7, 8, 10]
@@ -182,10 +204,11 @@ def resolve_roman(numeral: str, root: str, mode: str = "major") -> str:
     scale = MAJOR_SCALE if mode == "major" else MINOR_SCALE
     degree, is_upper, suffix, accidental = _parse_roman(numeral)
 
-    root = ENHARMONICS.get(root, root)
-    chord_root = NOTES[
-        (NOTES.index(root) + scale[degree] + accidental) % 12
-    ]
+    root_canon = ENHARMONICS.get(root, root)
+    pc = (NOTES.index(root_canon) + scale[degree] + accidental) % 12
+
+    spellings = KEY_SPELLINGS.get(root, KEY_SPELLINGS["C"])
+    chord_root = spellings[pc]
 
     if is_upper:
         return chord_root + suffix
@@ -238,7 +261,7 @@ def chord_to_roman(chord: str, key: str, mode: str = "major") -> str:
     return f"{acc}{roman_base}{suffix}"
 
 
-def chord_suggestions_for_key(key: str, genre: str, mode: str = "major") -> list[tuple[str, str]]:
+def chord_suggestions_for_key(key: str, genre: str, mode: str = "major") -> dict[str, list[tuple[str, str]]]:
     if genre == "jazz":
         diatonic = [
             "Imaj7",
@@ -282,15 +305,14 @@ def chord_suggestions_for_key(key: str, genre: str, mode: str = "major") -> list
             "VI",
         ]
 
-    romans = diatonic + borrowed + secondary
-
-    result = []
+    result = {"diatonic": [], "borrowed": [], "secondary": []}
     seen = set()
 
-    for roman in romans:
-        chord = resolve_roman(roman, key, mode)
-        if chord not in seen:
-            result.append((roman, chord))
-            seen.add(chord)
+    for category, category_romans in [("diatonic", diatonic), ("borrowed", borrowed), ("secondary", secondary)]:
+        for roman in category_romans:
+            chord = resolve_roman(roman, key, mode)
+            if chord not in seen:
+                result[category].append((roman, chord))
+                seen.add(chord)
 
     return result

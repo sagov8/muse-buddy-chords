@@ -1,11 +1,13 @@
 import random
 import flet as ft
+import threading
+import time
 
 from core.genre_loader import load_genre
 from core.graph_transforms import add_chord, remove_chord, get_auto_connections
 from core.progression_generator import generate
 from core.chord_theory import chord_suggestions_for_key
-from audio.player import play_progression
+from audio.player import play_progression, stop_progression
 from ui.components import progression_row
 from services.genre_service import get_genre_mode
 from services.lyric_chord_mapper import apply_chords_to_lyrics
@@ -25,6 +27,8 @@ class ChordController:
         self.visualizer = None
         self.lyrics_input = None
         self.lyrics_output = None
+        self.play_button = None
+        self._play_session = 0
 
     def bind_controls(
         self,
@@ -36,6 +40,7 @@ class ChordController:
         add_chord_dropdown,
         remove_chord_dropdown,
         visualizer,
+        play_button=None,
     ):
         self.genre_dropdown = genre_dropdown
         self.key_dropdown = key_dropdown
@@ -45,6 +50,7 @@ class ChordController:
         self.add_chord_dropdown = add_chord_dropdown
         self.remove_chord_dropdown = remove_chord_dropdown
         self.visualizer = visualizer
+        self.play_button = play_button
 
     def snack(self, msg: str):
         self.page.snack_bar = ft.SnackBar(ft.Text(msg))
@@ -99,7 +105,23 @@ class ChordController:
         if getattr(self, 'lyrics_input', None) and self.lyrics_input.value and self.lyrics_input.value.strip():
             self.apply_progression_to_lyrics()
 
+    def stop_playback(self):
+        self._play_session += 1
+        stop_progression()
+        if self.play_button:
+            self.play_button.icon = ft.icons.Icons.PLAY_ARROW
+            self.play_button.text = "Escuchar"
+            try:
+                self.play_button.update()
+            except Exception:
+                pass
+            try:
+                self.page.update()
+            except Exception:
+                pass
+
     def regenerate_progression(self, e=None):
+        self.stop_playback()
         self.ensure_current_graph()
 
         nodes = self.state.graph_data["nodes"]
@@ -122,9 +144,42 @@ class ChordController:
             self.snack("Primero genera una progresión.")
             return
 
-        play_progression(self.state.progression)
+        self._play_session += 1
+        current_session = self._play_session
+
+        if self.play_button:
+            self.play_button.icon = ft.icons.Icons.VOLUME_UP
+            self.play_button.text = "Reproduciendo..."
+            try:
+                self.play_button.update()
+            except Exception:
+                pass
+            try:
+                self.page.update()
+            except Exception:
+                pass
+
+        duration = play_progression(self.state.progression)
+
+        def wait_and_reset():
+            time.sleep(duration)
+            if self._play_session == current_session:
+                if self.play_button:
+                    self.play_button.icon = ft.icons.Icons.PLAY_ARROW
+                    self.play_button.text = "Escuchar"
+                    try:
+                        self.play_button.update()
+                    except Exception:
+                        pass
+                    try:
+                        self.page.update()
+                    except Exception:
+                        pass
+
+        threading.Thread(target=wait_and_reset, daemon=True).start()
 
     def save_edit(self, e):
+        self.stop_playback()
         self.state.progression = [
             chord.strip()
             for chord in self.edit_field.value.split(",")
@@ -134,22 +189,55 @@ class ChordController:
         self.refresh_ui()
 
     def update_chord_dropdowns(self):
-        suggestions = chord_suggestions_for_key(
+        suggestions_dict = chord_suggestions_for_key(
             self.key_dropdown.value,
             self.genre_dropdown.value,
             self.state.mode,
         )
 
         current_nodes = set(self.state.graph_data["nodes"])
+        options = []
 
-        self.add_chord_dropdown.options = [
+        # 1. Acordes de la escala (Diatónicos)
+        diatonic_suggestions = [
             ft.dropdown.Option(
                 key=chord,
                 text=f"{roman}  →  {chord}",
             )
-            for roman, chord in suggestions
+            for roman, chord in suggestions_dict.get("diatonic", [])
             if chord not in current_nodes
         ]
+        if diatonic_suggestions:
+            options.append(ft.dropdown.Option(text="─── Acordes de la Escala ───", disabled=True))
+            options.extend(diatonic_suggestions)
+
+        # 2. Préstamo modal
+        borrowed_suggestions = [
+            ft.dropdown.Option(
+                key=chord,
+                text=f"{roman}  →  {chord}",
+            )
+            for roman, chord in suggestions_dict.get("borrowed", [])
+            if chord not in current_nodes
+        ]
+        if borrowed_suggestions:
+            options.append(ft.dropdown.Option(text="─── Préstamo Modal ───", disabled=True))
+            options.extend(borrowed_suggestions)
+
+        # 3. Dominantes secundarias
+        secondary_suggestions = [
+            ft.dropdown.Option(
+                key=chord,
+                text=f"{roman}  →  {chord}",
+            )
+            for roman, chord in suggestions_dict.get("secondary", [])
+            if chord not in current_nodes
+        ]
+        if secondary_suggestions:
+            options.append(ft.dropdown.Option(text="─── Dominantes Secundarias ───", disabled=True))
+            options.extend(secondary_suggestions)
+
+        self.add_chord_dropdown.options = options
 
         self.remove_chord_dropdown.options = [
             ft.dropdown.Option(chord)
@@ -263,6 +351,7 @@ class ChordController:
         self.page.update()
 
     def toggle_theme(self, e=None):
+        self.stop_playback()
         from ui.styles import theme_colors
         from ui.layout import build_layout
 

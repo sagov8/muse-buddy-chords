@@ -79,6 +79,17 @@ def build_control_panel(controller):
         width=220,
     )
 
+    play_button = ft.ElevatedButton(
+        "Escuchar",
+        on_click=controller.play,
+        icon=ft.icons.Icons.PLAY_ARROW,
+        style=ft.ButtonStyle(
+            color="white",
+            bgcolor="#10B981",
+            shape=ft.RoundedRectangleBorder(radius=8),
+        ),
+    )
+
     genre.on_change = controller.change_base_graph
     key.on_change = controller.change_base_graph
 
@@ -91,6 +102,7 @@ def build_control_panel(controller):
         add_chord_dropdown=add_chord_dropdown,
         remove_chord_dropdown=remove_chord_dropdown,
         visualizer=controller.visualizer,
+        play_button=play_button,
     )
 
     return ft.Container(
@@ -219,16 +231,7 @@ def build_control_panel(controller):
                             ),
                         ),
 
-                        ft.ElevatedButton(
-                            "Escuchar",
-                            on_click=controller.play,
-                            icon=ft.icons.Icons.PLAY_ARROW,
-                            style=ft.ButtonStyle(
-                                color="white",
-                                bgcolor="#10B981",
-                                shape=ft.RoundedRectangleBorder(radius=8),
-                            ),
-                        ),
+                        play_button,
                     ],
                     spacing=10,
                 ),

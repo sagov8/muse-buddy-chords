@@ -17,6 +17,18 @@ FADE_OUT_FRAMES = 400
 
 
 def _chord_frequencies(symbol):
+    # Convert flat symbols in roots (e.g. Bb -> B-, Bb/Db -> B-/D-) for music21 compatibility
+    def translate_flat(s):
+        if len(s) >= 2 and s[1] == "b":
+            return s[0] + "-" + s[2:]
+        return s
+
+    if "/" in symbol:
+        parts = symbol.split("/")
+        symbol = "/".join(translate_flat(part) for part in parts)
+    else:
+        symbol = translate_flat(symbol)
+
     cs = harmony.ChordSymbol(symbol)
     freqs = []
 
@@ -99,18 +111,20 @@ def progression_to_wav_bytes(
     return buffer.getvalue()
 
 
-def play_progression(progression):
+def play_progression(progression, bpm=90, beats_per_chord=2):
     if not progression:
-        return
+        return 0.0
 
     os.makedirs("generated", exist_ok=True)
 
     wav_path = os.path.abspath("generated/output.wav")
 
-    wav_bytes = progression_to_wav_bytes(progression)
+    wav_bytes = progression_to_wav_bytes(progression, bpm=bpm, beats_per_chord=beats_per_chord)
 
     with open(wav_path, "wb") as f:
         f.write(wav_bytes)
+
+    duration = len(progression) * (60.0 / bpm * beats_per_chord)
 
     if platform.system() == "Windows":
         import winsound
@@ -123,9 +137,15 @@ def play_progression(progression):
             wav_path,
             winsound.SND_FILENAME | winsound.SND_ASYNC,
         )
+        return duration
     else:
         raise RuntimeError(
             "Esta versión usa winsound, disponible solo en Windows."
         )
+
+def stop_progression():
+    if platform.system() == "Windows":
+        import winsound
+        winsound.PlaySound(None, winsound.SND_PURGE)
 
 chord_progression_to_wav_bytes = progression_to_wav_bytes
