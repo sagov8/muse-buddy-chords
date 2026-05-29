@@ -4,6 +4,7 @@
 
 La aplicación cuenta con una interfaz responsiva, soporte para temas claro/oscuro y un visualizador interactivo de grafos en tiempo real que permite arrastrar y reorganizar los nodos de forma fluida.
 
+![img.png](img.png)
 ---
 
 ## Características Principales
